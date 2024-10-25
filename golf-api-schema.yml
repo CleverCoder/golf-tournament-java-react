@@ -1,0 +1,241 @@
+openapi: 3.0.0
+info:
+    title: Golf Tournament API
+    version: 1.0.0
+    description: API for managing golf tournament scoring and leaderboard
+servers:
+    -
+        url: http://localhost:8080
+        description: Local development server
+paths:
+    /api/tournament:
+        get:
+            tags:
+                - Tournament
+            responses:
+                '200':
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Tournament'
+                    description: Tournament details
+                '404':
+                    description: No tournament exists
+            operationId: getTournament
+            summary: Get current tournament details
+        post:
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TournamentCreate'
+                required: true
+            tags:
+                - Tournament
+            responses:
+                '201':
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Tournament'
+                    description: Tournament created
+                '409':
+                    description: Tournament already exists
+            operationId: createTournament
+            summary: Create new tournament (only one can exist at a time)
+    /api/players:
+        get:
+            tags:
+                - Players
+            responses:
+                '200':
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Player'
+                    description: List of players
+            operationId: listPlayers
+            summary: List all players
+        post:
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PlayerCreate'
+                required: true
+            tags:
+                - Players
+            responses:
+                '201':
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Player'
+                    description: Player created
+            operationId: createPlayer
+            summary: Register a new player
+    /api/scores:
+        post:
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ScoreSubmission'
+                required: true
+            tags:
+                - Scores
+            responses:
+                '201':
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Score'
+                    description: Score recorded
+                '404':
+                    description: No tournament exists or player not found
+            operationId: submitScore
+            summary: Submit score for a hole
+    /api/leaderboard:
+        get:
+            tags:
+                - Leaderboard
+            responses:
+                '200':
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Leaderboard'
+                    description: Current leaderboard
+                '404':
+                    description: No tournament exists
+            operationId: getLeaderboard
+            summary: Get current leaderboard
+components:
+    schemas:
+        Tournament:
+            type: object
+            properties:
+                id:
+                    format: uuid
+                    type: string
+                coursePars:
+                    description: Array of par values for each hole (must be 18 holes)
+                    type: array
+                    items:
+                        type: integer
+                totalPar:
+                    type: integer
+                    example: 72
+        TournamentCreate:
+            required:
+                - coursePars
+            type: object
+            properties:
+                coursePars:
+                    description: Array of par values for each hole
+                    maxItems: 18
+                    minItems: 18
+                    type: array
+                    items:
+                        type: integer
+                    example: [4,5,3,4,5,4,4,3,4,4,4,4,4,5,4,3,5,3]
+        Player:
+            type: object
+            properties:
+                id:
+                    format: uuid
+                    type: string
+                name:
+                    type: string
+                holesCompleted:
+                    maximum: 18
+                    minimum: 0
+                    type: integer
+                relativeToPar:
+                    description: Current score relative to par (negative is under par)
+                    type: integer
+        PlayerCreate:
+            required:
+                - name
+            type: object
+            properties:
+                name:
+                    type: string
+        Score:
+            type: object
+            properties:
+                playerId:
+                    format: uuid
+                    type: string
+                holeNumber:
+                    maximum: 18
+                    minimum: 1
+                    type: integer
+                strokes:
+                    minimum: 1
+                    type: integer
+                relativeToPar:
+                    description: Score relative to par for this hole (negative is under par)
+                    type: integer
+        ScoreSubmission:
+            required:
+                - playerId
+                - holeNumber
+                - strokes
+            type: object
+            properties:
+                playerId:
+                    format: uuid
+                    type: string
+                holeNumber:
+                    maximum: 18
+                    minimum: 1
+                    type: integer
+                strokes:
+                    minimum: 1
+                    type: integer
+        Leaderboard:
+            type: object
+            properties:
+                lastUpdated:
+                    format: date-time
+                    type: string
+                players:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/LeaderboardEntry'
+        LeaderboardEntry:
+            type: object
+            properties:
+                position:
+                    type: integer
+                playerId:
+                    format: uuid
+                    type: string
+                playerName:
+                    type: string
+                holesCompleted:
+                    maximum: 18
+                    minimum: 0
+                    type: integer
+                relativeToPar:
+                    description: Score relative to par ('E' for even, or +/- number)
+                    type: string
+                totalScore:
+                    description: Only shown when all 18 holes are completed
+                    type: integer
+tags:
+    -
+        name: Tournament
+        description: Tournament management operations
+    -
+        name: Players
+        description: Player management operations
+    -
+        name: Scores
+        description: Score tracking operations
+    -
+        name: Leaderboard
+        description: Leaderboard operations

@@ -1,0 +1,32 @@
+{
+  "name": "golf-tournament",
+  "version": "1.0.0",
+  "description": "Golf Tournament Scoring System",
+  "scripts": {
+    "dev:up": "docker compose up -d",
+    "dev:down": "docker compose down",
+
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker stop postgres",
+    
+    "apicurio:up": "docker compose -f docker-compose-apicurio.yml up -d",
+    "apicurio:down": "docker compose -f docker-compose-apicurio.yml down",
+    
+    "api:clean": "rimraf ./golf-api-java/generated ./golf-api-go/generated ./golf-ui/src/api",
+    "api:gen:java": "openapi-generator-cli generate -i golf-api-schema.yml -g spring -o ./golf-api-java/generated --additional-properties=interfaceOnly=true,useTags=true,basePackage=com.tournament.golf.api,apiPackage=com.tournament.golf.api,modelPackage=com.tournament.golf.apimodel,dateLibrary=java8,useSpringBoot3=true",
+    "api:gen:react": "openapi-generator-cli generate -i golf-api-schema.yml -g typescript-axios -o ./golf-ui/src/api --additional-properties=supportsES6=true,typescriptThreePlus=true",
+    "api:gen:all": "npm run api:clean && npm run api:gen:java && npm run api:gen:react",
+    
+    "start": "docker compose up --build",
+    "stop": "docker compose down",
+    "restart": "npm run stop && npm run start",
+    
+    "install-deps": "npm install && cd golf-ui && npm install",
+    "create-schema": "node create-schema.js"
+  },
+  "dependencies": {
+    "@openapitools/openapi-generator-cli": "^2.7.0",
+    "pg": "^8.11.3",
+    "rimraf": "^5.0.5"
+  }
+}

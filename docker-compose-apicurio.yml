@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  apicurio-studio:
+    image: quay.io/apicurio/apicurio-studio:1.0.0.Beta1
+    container_name: apicurio-studio
+    ports:
+      - "9080:8080"
+    environment:
+      - JAVA_OPTS=-Xmx512m
+      - QUARKUS_HTTP_CORS_ORIGINS=*
+    networks:
+      - apicurio-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  apicurio-studio-ui:
+    build:
+      context: .
+      dockerfile: apicurio-ui-custom.Dockerfile
+    container_name: apicurio-studio-ui
+    ports:
+      - "9888:8080"
+    networks:
+      - apicurio-network
+    depends_on:
+      - apicurio-studio
+
+networks:
+  apicurio-network:
+    name: apicurio-network
+    driver: bridge

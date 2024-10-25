@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: golfdb
+      POSTGRES_USER: golfuser
+      POSTGRES_PASSWORD: golfpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+
+    networks:
+      - golf-network
+
+  java-service:
+    build:
+      context: ./golf-api-java
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/golfdb
+      SPRING_DATASOURCE_USERNAME: golfuser
+      SPRING_DATASOURCE_PASSWORD: golfpass
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - golf-network
+
+  # Will be implemented later
+  # go-service:
+  #   build:
+  #     context: ./go-service
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     DB_HOST: postgres
+  #     DB_NAME: golfdb
+  #     DB_USER: golfuser
+  #     DB_PASSWORD: golfpass
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #   ports:
+  #     - "8081:8081"
+  #   depends_on:
+  #     - redis
+  #     - postgres
+  #   networks:
+  #     - golf-network
+
+  golf-ui:
+    build:
+      context: ./golf-ui
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount the source code
+      - ./golf-ui:/app
+      # Mount a volume for node_modules to prevent overwriting by the bind mount
+      - golf-ui-node-modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      # Enable Fast Refresh
+      - WATCHPACK_POLLING=true
+      # Add service URLs for when APIs are implemented
+      - NEXT_PUBLIC_JAVA_API_URL=http://java-service:8080
+      - NEXT_PUBLIC_GO_API_URL=http://go-service:8081
+      - NEXT_PUBLIC_REDIS_HOST=redis
+      - NEXT_PUBLIC_REDIS_PORT=6379
+    stdin_open: true
+    tty: true
+    networks:
+      - golf-network
+    depends_on:
+      - postgres
+
+networks:
+  golf-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  golf-ui-node-modules:
