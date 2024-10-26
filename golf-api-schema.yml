@@ -223,9 +223,13 @@ components:
                 relativeToPar:
                     description: Score relative to par ('E' for even, or +/- number)
                     type: string
-                totalScore:
-                    description: Only shown when all 18 holes are completed
+                parOfPlayedHoles:
+                    description: The total par value of played holes
                     type: integer
+                currentScore:
+                    description: The current running score for played holes
+                    type: integer
+                
 tags:
     -
         name: Tournament

@@ -1,19 +1,19 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: golfdb
-      POSTGRES_USER: golfuser
-      POSTGRES_PASSWORD: golfpass
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./postgres-data:/var/lib/postgresql/data
+  # postgres:
+  #   image: postgres:15-alpine
+  #   environment:
+  #     POSTGRES_DB: golfdb
+  #     POSTGRES_USER: golfuser
+  #     POSTGRES_PASSWORD: golfpass
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - ./postgres-data:/var/lib/postgresql/data
 
-    networks:
-      - golf-network
+  #   networks:
+  #     - golf-network
 
   java-service:
     build:
@@ -28,8 +28,8 @@ services:
       REDIS_PORT: 6379
     ports:
       - "8080:8080"
-    depends_on:
-      - postgres
+    # depends_on:
+    #   - postgres
     networks:
       - golf-network
 
@@ -56,35 +56,18 @@ services:
   golf-ui:
     build:
       context: ./golf-ui
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     ports:
-      - "3000:3000"
-    volumes:
-      # Mount the source code
-      - ./golf-ui:/app
-      # Mount a volume for node_modules to prevent overwriting by the bind mount
-      - golf-ui-node-modules:/app/node_modules
-    environment:
-      - NODE_ENV=development
-      - NEXT_TELEMETRY_DISABLED=1
-      # Enable Fast Refresh
-      - WATCHPACK_POLLING=true
-      # Add service URLs for when APIs are implemented
-      - NEXT_PUBLIC_JAVA_API_URL=http://java-service:8080
-      - NEXT_PUBLIC_GO_API_URL=http://go-service:8081
-      - NEXT_PUBLIC_REDIS_HOST=redis
-      - NEXT_PUBLIC_REDIS_PORT=6379
-    stdin_open: true
-    tty: true
+      - "5173:5173"
     networks:
       - golf-network
     depends_on:
-      - postgres
+      - java-service
 
 networks:
   golf-network:
     driver: bridge
 
 volumes:
-  postgres-data:
+  # postgres-data:
   golf-ui-node-modules:

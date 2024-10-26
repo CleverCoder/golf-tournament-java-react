@@ -5,10 +5,12 @@ import com.tournament.golf.exception.TournamentExistsException;
 import com.tournament.golf.model.HoleScore;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -46,7 +48,7 @@ public class GolfService {
         players.put(player.getId(), player);
 
         // Init hole scores for the player
-        userHoleScores.put(player.getId(), createInitialHoleScores(currentTournament.getCoursePars().size()));
+        userHoleScores.put(player.getId(), new ArrayList<>());
 
         return player;
     }
@@ -92,13 +94,15 @@ public class GolfService {
                 .strokes(scoreSubmission.getStrokes())
                 .relativeToPar(scoreSubmission.getStrokes() - holePar);
 
-        // Calculate total score and relative to par
-        int totalScore = holeScores.stream().mapToInt(HoleScore::getSwings).sum();
-        int totalPar = currentTournament.getTotalPar();
-        int relativeToPar = totalScore - totalPar;
-
         player.setHolesCompleted(holeScores.size());
-        player.setRelativeToPar(relativeToPar);
+
+        // Calculate total score and relative to par if all holes are completed
+        if (player.getHolesCompleted() == coursePars.size()) {
+            int totalScore = holeScores.stream().mapToInt(HoleScore::getSwings).sum();
+            int totalPar = currentTournament.getTotalPar();
+            int relativeToPar = totalScore - totalPar;
+            player.setRelativeToPar(relativeToPar);
+        }
 
         return score;
     }
@@ -107,10 +111,52 @@ public class GolfService {
         return coursePars != null ? coursePars.stream().mapToInt(Integer::intValue).sum() : 0;
     }
 
-    private static List<HoleScore> createInitialHoleScores(int numberOfHoles) {
-        return IntStream.range(0, numberOfHoles)
-                .mapToObj(i -> new HoleScore(i + 1, 0))
-                .collect(Collectors.toList());
+    public Leaderboard getLeaderboard() {
+        var leaderboard = new Leaderboard();
+
+        // Convert values to list and sort players
+        List<Player> sortedPlayers = players.values().stream()
+                .sorted((p1, p2) -> {
+                    if (p1.getRelativeToPar() == null || p2.getRelativeToPar() == null) {
+                        return 0;
+                    }
+
+                    // First compare by relative to par
+                    if (!Objects.equals(p1.getRelativeToPar(), p2.getRelativeToPar())) {
+                        return p1.getRelativeToPar() - p2.getRelativeToPar();
+                    }
+                    // Break ties by holes completed
+                    return p2.getHolesCompleted() - p1.getHolesCompleted();
+                })
+                .toList();
+
+        AtomicInteger position = new AtomicInteger(1);
+        var leaderBoardEntries = sortedPlayers.stream().map(player -> {
+            String relativeToPar = null;
+            if (player.getRelativeToPar() != null) {
+                relativeToPar = player.getRelativeToPar() == 0 ? "E" : player.getRelativeToPar().toString();
+            }
+
+            return new LeaderboardEntry()
+                    .position(position.getAndIncrement())
+                    .playerId(player.getId())
+                    .playerName(player.getName())
+                    .holesCompleted(player.getHolesCompleted())
+                    .relativeToPar(relativeToPar)
+                    .currentScore(getUserCurrentScore(player.getId()));
+        }).toList();
+
+        leaderboard.setPlayers(leaderBoardEntries);
+
+        return leaderboard;
     }
 
+    private int getUserCurrentScore(UUID playerId) {
+        var holeScores = userHoleScores.get(playerId);
+        if (holeScores == null) {
+            return 0;
+        }
+
+        return holeScores.stream().mapToInt(HoleScore::getSwings).sum();
+    }
 }

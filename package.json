@@ -14,7 +14,7 @@
     
     "api:clean": "rimraf ./golf-api-java/generated ./golf-api-go/generated ./golf-ui/src/api",
     "api:gen:java": "openapi-generator-cli generate -i golf-api-schema.yml -g spring -o ./golf-api-java/generated --additional-properties=interfaceOnly=true,useTags=true,basePackage=com.tournament.golf.api,apiPackage=com.tournament.golf.api,modelPackage=com.tournament.golf.apimodel,dateLibrary=java8,useSpringBoot3=true",
-    "api:gen:react": "openapi-generator-cli generate -i golf-api-schema.yml -g typescript-axios -o ./golf-ui/src/api --additional-properties=supportsES6=true,typescriptThreePlus=true",
+    "api:gen:react": "openapi-generator-cli generate -i golf-api-schema.yml -g typescript-axios -o ./golf-ui/src/api/generated --additional-properties=supportsES6=true,typescriptThreePlus=true",
     "api:gen:all": "npm run api:clean && npm run api:gen:java && npm run api:gen:react",
     
     "start": "docker compose up --build",
