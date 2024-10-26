@@ -31,6 +31,8 @@ This will use Docker compose to create the UI and API containers, configure thei
 install dependencies, and run the corresponding UI and API processes. The API currently just uses
 in-memory hash maps for data storage. Just a proof of concept to play with React+Vite and the latest Java Spring Boot.
 
+Open a browser to: http://localhost:5173/
+
 ## Notes
 
 Apicurio Studio has a docker-compose file for convenience, setup to NOT run on port 8080. (Why did they make it so hard?)
